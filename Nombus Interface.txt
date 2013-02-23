@@ -1,0 +1,7 @@
+
+
+$ nombus [path to csv file] [path to output file(default output.csv in cwd)]
+
+-n | --nameserver The list of nameservers to query (default google)
+-s | --separator Column separator for csv file (default comma)
+-h | --headers Whther the csv file has headers, boolean (default true)
