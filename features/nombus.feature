@@ -3,7 +3,7 @@ Feature: Check if domain names are managed by Windermere DNS servers
   I want to do a dns lookup on each custom domain
   So I can let the agents know if the IP address for a.com changes
 
-  Scenario: Basic UI
+  Scenario: User Interface
     When I get help for "nombus"
     Then the exit status should be 0
     And the banner should be present
@@ -12,6 +12,11 @@ Feature: Check if domain names are managed by Windermere DNS servers
     And the banner should document that this app takes options
     And the following options should be documented:
       |--version|
+      |-n |
+      |--nameservers|
+      |-s |
+      |--separator|
+      |--headers|
     And the banner should document that this app's arguments are:
 	      |csv_file|which is required|
 	      |output_file|which is optional|

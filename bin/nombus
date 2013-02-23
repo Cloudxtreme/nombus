@@ -11,10 +11,15 @@ class App
   main do
   end
 
-  version Nombus::VERSION
-  description 'Check if domain names are managed by Windermere DNS servers.'
-  arg :csv_file, "Path to a CSV file with a list of domain names."
-  arg :output_file, :optional, "Path to the resulting CSV file, including only the domain names that are not managed by Windermere."
+  version Nombus::Version
+  description 'Check if domain names are managed by Windermere DNS servers'
+  options['separator'] = Nombus::DefaultSeparator
+  on "-s SEPARATOR","--separator","Column separator for csv file"
+  options['nameservers'] = Nombus::DefaultNameservers
+  on "-n LIST", "--nameservers",	"The list of nameservers to query"
+  on "--headers", "Whether the csv file has headers"
+  arg :csv_file, "Path to a CSV file with a list of domain names"
+  arg :output_file, :optional, "Path to the resulting CSV file, including only the domain names that are not managed by Windermere. If not specified then current working directory."
   use_log_level_option
 
   go!

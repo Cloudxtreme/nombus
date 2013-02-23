@@ -5,7 +5,7 @@ require 'nombus/version'
 
 Gem::Specification.new do |gem|
   gem.name          = "nombus"
-  gem.version       = Nombus::VERSION
+  gem.version       = Nombus::Version
   gem.authors       = ["TODO: Write your name"]
   gem.email         = ["TODO: Write your email address"]
   gem.description   = %q{TODO: Write a gem description}
