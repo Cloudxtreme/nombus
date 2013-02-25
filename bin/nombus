@@ -5,21 +5,44 @@ require 'methadone'
 require 'nombus'
 require 'csv'
 require 'dnsruby'
+require 'wre_dns'
 
 class App
   include Methadone::Main
   include Methadone::CLILogging
 
   main do |input_file, output_file|
+    # Parse options into appropriate types
+    servers = options['nameservers'].split
+    column = options['column'].to_i
+    dns = Dnsruby::DNS.new( {:nameserver=>servers} )
     domain_file = CSV.open(input_file)
     output_file = Nombus::OutputFileName if not output_file
     nombus_domains = CSV.open(output_file, "wb")
     # Add headers from 1st line to output if there are any
     nombus_domains << domain_file.readline unless options['no-headers']
-    column = options['column'].to_i
     domain_file.each do |row|
     	domain = Dnsruby::Name.create row[column]
     	info 'Checking domain: ' + domain.to_s
+    	begin
+    	  name_server = dns.getresource(domain, Dnsruby::Types.SOA).mname
+        a_record = dns.getresource(domain, Dnsruby::Types.A).address		
+        # if it doesn't have our namserver but does have one of our
+        # old ip addresses then we found one that we want to record.
+        debug domain.to_s + ', using our server? ' + (WreDns::NameServer == name_server).to_s
+        debug domain.to_s + ', using one of our old ips? ' + (WreDns::OldAcomIps.include? a_record).to_s
+        debug domain.to_s + ', not managed by us? ' + (Nombus.NotManagedByUs?(WreDns::NameServer, name_server, WreDns::OldAcomIps, a_record)).to_s
+        if Nombus.NotManagedByUs?(WreDns::NameServer, name_server, WreDns::OldAcomIps, a_record)
+        	# Ignore if we've already set them up with the current IP.
+        	unless a_record == WreDns::AcomIp
+        		info domain.to_s + ': not managed by us.'
+        		nombus_domains << row
+        	end
+        end
+      rescue Dnsruby::NXDomain
+        warn 'No records for ' + domain.to_s
+        next
+      end
     end
   end
   
