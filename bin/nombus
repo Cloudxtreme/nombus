@@ -3,23 +3,38 @@
 require 'optparse'
 require 'methadone'
 require 'nombus'
+require 'csv'
+require 'dnsruby'
 
 class App
   include Methadone::Main
   include Methadone::CLILogging
 
-  main do
+  main do |input_file, output_file|
+    domain_file = CSV.open(input_file)
+    output_file = Nombus::OutputFileName if not output_file
+    nombus_domains = CSV.open(output_file, "wb")
+    # Add headers from 1st line to output if there are any
+    nombus_domains << domain_file.readline unless options['no-headers']
+    column = options['column'].to_i
+    domain_file.each do |row|
+    	domain = Dnsruby::Name.create row[column]
+    	info 'Checking domain: ' + domain.to_s
+    end
   end
-
+  
+  # Configure command line options/arguments and build the help menu.
   version Nombus::Version
   description 'Check if domain names are managed by Windermere DNS servers'
   options['separator'] = Nombus::DefaultSeparator
-  on "-s SEPARATOR","--separator","Column separator for csv file"
+  on "-s SEPARATOR", "--separator","Column separator for csv file"
+  options['column'] = Nombus::Column
+  on "-c", "--column", "The column where the domain name is stored in the csv file"
   options['nameservers'] = Nombus::DefaultNameservers
   on "-n LIST", "--nameservers",	"The list of nameservers to query"
-  on "--headers", "Whether the csv file has headers"
+  on "--no-headers", "Specify if the csv file has no headers, default assumes headers exist"
   arg :csv_file, "Path to a CSV file with a list of domain names"
-  arg :output_file, :optional, "Path to the resulting CSV file, including only the domain names that are not managed by Windermere. If not specified then current working directory."
+  arg :output_file, :optional, "Path to a CSV file which only includes domains that are not managed by Windermere. If none specified then current working directory."
   use_log_level_option
 
   go!
