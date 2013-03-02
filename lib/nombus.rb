@@ -9,7 +9,10 @@ module Nombus
   # the script on our network.
   DefaultNameservers = '8.8.8.8 8.8.4.4'
   OutputFileName = 'nombus_domains.csv'
-  Column = '0'
+  Column = '1'
+  DebugColor = :magenta
+  WarnColor = :yellow
+  ErrorColor = :red
   def Nombus.NotManagedByUs?(our_ns, their_ns, our_ips, their_ip)
     # Return true if it's not our nameserver,
     # but does use one of the old a.com IPs.

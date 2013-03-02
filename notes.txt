@@ -1,0 +1,19 @@
+To do:
+	1. Need to add flag for capturing lookup failures in a file so I can diagnose what went wrong.
+	2. Need to add code to check if the record is in fact a domain name. Regexp?
+	Example:
+		getdenece.com: adding record to csv nombus_domains.csv
+		Row array: [nil, "ggergen", "Glenn Gergen", "GGergen@Windermere.Com"]
+		cannot interpret as DNS name: nil
+	It's failing at: domain = Dnsruby::Name.create row[column]
+	3. 
+
+Commands
+bundle exec nombus -s tab --log-level debug test/test_domains-tabs.csv
+bundle exec nombus --no-headers --log-level debug test/test_domains-no_headers.csv
+
+dns config example
+dns = DNS.new( {:nameserver=>["8.8.8.8", "8.8.4.4"], :search=>["withwre.com", "mywindermere.com"], :ndots=>1} )
+
+Shouldln't show: bruceclouse.com
+ar = dns.getresource('bruceclouse.com', Types.A).address	
