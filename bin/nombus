@@ -14,21 +14,9 @@ class App
 
   main do |input_file, output_file|
     debug "Column index: #{options[:column]}".foreground(Nombus::DebugColor)
-    if options[:column] =~ /[0-9]/
-      # Internally csv starts at 0, but want command option to start at 1
-      column = options[:column].to_i - 1
-    elsif options[:column].to_i < 1
-      exit! "Error: #{options[:column]} must be greater than 0"
-    else
-      exit! "Error: #{options[:column]} is not a number"
-    end 
-    # Can't use \t on command line
+    column = Nombus::GetColumnIndex(options[:column])
     debug "Separator is: #{options[:separator]}".foreground(Nombus::DebugColor)
-    if options[:separator] == 'tab'
-      separator = "\t"
-    else
-      separator = options[:separator]
-    end
+    separator = Nombus::GetSeparator(options[:separator])
     dns = Dnsruby::DNS.new :nameserver => options[:nameservers].split
     debug "Using namservers: #{dns.config.nameserver.join(', ')}".foreground(Nombus::DebugColor)
     domain_file = CSV.open(input_file, :col_sep => separator)
@@ -80,7 +68,7 @@ class App
   options[:separator] = Nombus::DefaultSeparator
   on "-s CHARACTER", "--separator", "Column separator for csv file. Use 'tab' to indicate tabs."
   options[:column] = Nombus::Column
-  on "-c NUMBER", "--column", "The column where the domain name is stored in the csv file"
+  on "-c NUMBER", "--column", "The column where the domain name is stored in the csv file starting at 1"
   options[:nameservers] = Nombus::DefaultNameservers
   on "-n 'SRVR1 SRVR2'", "--nameservers",	"A quoted list of nameservers to use for queries"
   on("--no-headers","Specify that the csv file has no headers, default assumes headers exist") do
@@ -90,6 +78,6 @@ class App
   arg :csv_file, "Path to a CSV file with a list of domain names"
   arg :output_file, :optional, "Path to a CSV file which only includes domains that are not managed by Windermere. If none specified then current working directory."
   use_log_level_option
-
+  
   go!
 end

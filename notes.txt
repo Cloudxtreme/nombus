@@ -1,3 +1,8 @@
+Get exit code of a program: `echo $?`
+
+include DEBUG=true with command in order to see stack trace.
+Example: DEBUG=true bundle exec nombus -c 0 --log-level debug test/test_domains-short.csv
+
 To do:
 	1. Need to add flag for capturing lookup failures in a file so I can diagnose what went wrong.
 	2. Need to add code to check if the record is in fact a domain name. Regexp?

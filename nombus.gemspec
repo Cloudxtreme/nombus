@@ -6,11 +6,11 @@ require 'nombus/version'
 Gem::Specification.new do |gem|
   gem.name          = "nombus"
   gem.version       = Nombus::Version
-  gem.authors       = ["TODO: Write your name"]
-  gem.email         = ["TODO: Write your email address"]
+  gem.authors       = ["Adam Griffin"]
+  gem.email         = ["adam.griffin@windermeresolutions.com"]
   gem.description   = %q{TODO: Write a gem description}
   gem.summary       = %q{TODO: Write a gem summary}
-  gem.homepage      = ""
+  gem.homepage      = "windermere.com"
 
   gem.files         = `git ls-files`.split($/)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
