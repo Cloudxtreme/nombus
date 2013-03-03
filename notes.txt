@@ -1,13 +1,11 @@
-
+record = Whois.whois(domain.to_s)
+record.registered?
 
 To do:
-	1. Need to add code to check if the record is in fact a domain name. Regexp?
-	Example:
-		getdenece.com: adding record to csv nombus_domains.csv
-		Row array: [nil, "ggergen", "Glenn Gergen", "GGergen@Windermere.Com"]
-		cannot interpret as DNS name: nil
-	It's failing at: domain = Dnsruby::Name.create row[column]
 	2. Take input from stdin instead of a file?
+	3. Use a config file like .nombusrc
+	4. User yaml to store default config info?
+	5. Dnsruby is doing 2 lookups for each domain name. Should try going back to 1.
 
 Get exit code of a program: `echo $?`
 

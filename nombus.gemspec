@@ -20,6 +20,8 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency('aruba')
   gem.add_development_dependency('rake', '~> 0.9.2')
   gem.add_dependency('methadone', '~> 1.2.4')
-  gem.add_dependency('dnsruby', '~> 1.53')
-  gem.add_development_dependency('rainbow')
+  gem.add_dependency('dnsruby')
+  gem.add_dependency('public_suffix')
+  gem.add_dependency('whois')
+  gem.add_dependency('rainbow')
 end

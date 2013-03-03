@@ -1,4 +1,5 @@
 require "nombus/version"
+require 'whois'
 
 module Nombus
   include Methadone::CLILogging
@@ -21,16 +22,21 @@ module Nombus
     # but does use one of the old a.com IPs.
   	(our_ns != their_ns) and (our_ips.include? their_ip)
   end
-  def Nombus.ErrorMessage(domain, error)
+  def Nombus.LookupErrorMessage(domain, error)
+    # Lookup with whois first to see if domain is even registered
+    record = Whois.whois(domain.to_s)
+    if record.available?
+      return "The #{domain} is not a registered domain name"
+    end
+    # Try to explain other errors as best as possible
     case error
     when Dnsruby::NXDomain
-      message = "No records found for #{domain}"
+      return "No records found for #{domain}"
     when Dnsruby::ServFail
-      message = "Lookup failed for #{domain}"
+      return "Lookup failed for #{domain}"
     when Dnsruby::ResolvError
-      message = "DNS result has no information for #{domain}"
+      return "DNS result has no information for #{domain}"
     end
-    message
   end
   def Nombus.GetColumnIndex(column)
     # Handles error checking of column number passed on comamnd line
@@ -38,7 +44,7 @@ module Nombus
     if column =~ /[0-9]/
       index = column.to_i
     else
-      exit! "Error: #{column} is not a number"
+      exit_now! "Error: #{column} is not a number"
     end
     if index < 1
       exit_now! "Error: column number must be greater than 0"
@@ -49,12 +55,12 @@ module Nombus
   def Nombus.GetSeparator(separator)
     case separator
     when /[\s\t\r\n\f]/
-      exit_now! "Separator can't be a whitspace character. Use 'tab' for tabs"
+      exit_now! "Error: Separator can't be a whitspace character. Use 'tab' for tabs"
     # Can't use \t on command line
     when 'tab'
-      "\t"
+      return "\t"
     else
-      separator
+      return separator
     end
   end
 end
