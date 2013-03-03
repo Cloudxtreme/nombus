@@ -12,7 +12,7 @@ class App
   include Methadone::Main
   include Methadone::CLILogging
 
-  main do |input_file, output_file|
+  main do |input_file|
     debug "Column index: #{options[:column]}".foreground(Nombus::DebugColor)
     column = Nombus::GetColumnIndex(options[:column])
     debug "Separator is: #{options[:separator]}".foreground(Nombus::DebugColor)
@@ -20,17 +20,21 @@ class App
     dns = Dnsruby::DNS.new :nameserver => options[:nameservers].split
     debug "Using namservers: #{dns.config.nameserver.join(', ')}".foreground(Nombus::DebugColor)
     domain_file = CSV.open(input_file, :col_sep => separator)
-    output_file = Nombus::OutputFileName if not output_file
-    nombus_domains = CSV.open(output_file, "wb", :col_sep => separator)
+    nombus_domains = CSV.open(options[:output], "wb", :col_sep => separator) if options[:output]
     debug "Use headers? #{options['no-headers']}".foreground(Nombus::DebugColor)
     # Add headers from 1st line to output if there are any
-    nombus_domains << domain_file.readline unless options['no-headers']
+    headers =  domain_file.readline unless options['no-headers']
+    nombus_domains << headers if options[:output]
+    if options[:fail]
+      fails = CSV.open(options[:fail], "wb")
+      fails << Nombus::FailHeaders
+    end
     domain_file.each do |row|
       debug "Row array: #{row}".foreground(Nombus::DebugColor)
     	domain = Dnsruby::Name.create row[column]
     	info "Checking domain: #{domain}"
     	begin
-    	  name_server = dns.getresource(domain, Dnsruby::Types.SOA).mname
+        name_server = dns.getresource(domain, Dnsruby::Types.SOA).mname
         a_record = dns.getresource(domain, Dnsruby::Types.A).address		
         # if it doesn't have our namserver but does have one of our
         # old ip addresses then we found one that we want to record.
@@ -38,20 +42,17 @@ class App
         debug "#{domain}: using one of our old ips? #{WreDns::OldAcomIps.include? a_record}".foreground(Nombus::DebugColor)
         debug "#{domain}: not managed by us? #{Nombus.NotManagedByUs?(WreDns::NameServer, name_server, WreDns::OldAcomIps, a_record)}".foreground(Nombus::DebugColor)
         if Nombus.NotManagedByUs?(WreDns::NameServer, name_server, WreDns::OldAcomIps, a_record)
-        	# Ignore if we've already set them up with the current IP.
-        	unless a_record == WreDns::AcomIp
-        		info "#{domain}: adding record to csv #{output_file}"
-        		nombus_domains << row
-        	end
+          # Ignore if we've already set them up with the current IP.
+          unless a_record == WreDns::AcomIp
+            info "#{domain}: Not managed by us"
+            nombus_domains << row  if options[:output]
+          end
         end
-      rescue Dnsruby::NXDomain
-        warn "No records found for #{domain}".foreground(Nombus::WarnColor)
+      rescue Dnsruby::NXDomain, Dnsruby::ServFail, Dnsruby::ResolvError => dns_error
+        message = Nombus::ErrorMessage(domain, dns_error)
+        warn message.foreground(Nombus::WarnColor)
+        fails << [domain.to_s, message, dns_error.class.to_s] if options[:fail]
         next
-      rescue Dnsruby::ServFail
-        warn "Lookup failed for #{domain}".foreground(Nombus::WarnColor)
-        next
-      rescue Dnsruby::ResolvError
-        warn "DNS result has no information for #{domain}".foreground(Nombus::WarnColor)
       rescue => other_error
         error "#{domain}: Rescued error: #{other_error.class}, error message: #{other_error.message}".foreground(Nombus::ErrorColor)
         next
@@ -68,15 +69,16 @@ class App
   options[:separator] = Nombus::DefaultSeparator
   on "-s CHARACTER", "--separator", "Column separator for csv file. Use 'tab' to indicate tabs."
   options[:column] = Nombus::Column
-  on "-c NUMBER", "--column", "The column where the domain name is stored in the csv file starting at 1"
+  on "-c NUMBER", "--column", "The column where the domain name is stored in the csv file, starting at 1"
   options[:nameservers] = Nombus::DefaultNameservers
   on "-n 'SRVR1 SRVR2'", "--nameservers",	"A quoted list of nameservers to use for queries"
   on("--no-headers","Specify that the csv file has no headers, default assumes headers exist") do
     # Methadone sets this to false for some reason if 'no' is at beginning of op so doing it manually
     options['no-headers'] = true
   end
+  on "-o PATH/FILE.CSV", "--output", "Specify a path where you would like records for domains that are not managed by us to be captured."
+  on "-f PATH/FILE.CSV", "--fail", "Specify a path where you would like records for domains that failed dns lookup"
   arg :csv_file, "Path to a CSV file with a list of domain names"
-  arg :output_file, :optional, "Path to a CSV file which only includes domains that are not managed by Windermere. If none specified then current working directory."
   use_log_level_option
   
   go!

@@ -11,8 +11,8 @@ module Nombus
   # Using the defaults was masking this problem when running
   # the script on our network.
   DefaultNameservers = '8.8.8.8 8.8.4.4'
-  OutputFileName = 'nombus_domains.csv'
   Column = '1'
+  FailHeaders = ["Domain", "Error", "Error Class"]
   DebugColor = :magenta
   WarnColor = :yellow
   ErrorColor = :red
@@ -20,6 +20,17 @@ module Nombus
     # Return true if it's not our nameserver,
     # but does use one of the old a.com IPs.
   	(our_ns != their_ns) and (our_ips.include? their_ip)
+  end
+  def Nombus.ErrorMessage(domain, error)
+    case error
+    when Dnsruby::NXDomain
+      message = "No records found for #{domain}"
+    when Dnsruby::ServFail
+      message = "Lookup failed for #{domain}"
+    when Dnsruby::ResolvError
+      message = "DNS result has no information for #{domain}"
+    end
+    message
   end
   def Nombus.GetColumnIndex(column)
     # Handles error checking of column number passed on comamnd line
