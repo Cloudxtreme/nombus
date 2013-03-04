@@ -42,14 +42,14 @@ class App
       end
     	info "Checking domain: #{domain}"
     	begin
-        name_server = dns.getresource(domain, Dnsruby::Types.SOA).mname
+        nameserver = dns.getresource(domain, Dnsruby::Types.SOA).mname
         a_record = dns.getresource(domain, Dnsruby::Types.A).address		
         # if it doesn't have our namserver but does have one of our
         # old ip addresses then we found one that we want to record.
-        debug "#{domain}: using our server? #{WreDns::NameServer == name_server}".color(Nombus::DebugColor)
+        debug "#{domain}: using our server? #{WreDns::NameServer == nameserver}".color(Nombus::DebugColor)
         debug "#{domain}: using one of our old ips? #{WreDns::OldAcomIps.include? a_record}".color(Nombus::DebugColor)
-        debug "#{domain}: not managed by us? #{Nombus.NotManagedByUs?(WreDns::NameServer, name_server, WreDns::OldAcomIps, a_record)}".color(Nombus::DebugColor)
-        if Nombus.NotManagedByUs?(WreDns::NameServer, name_server, WreDns::OldAcomIps, a_record)
+        debug "#{domain}: not managed by us? #{Nombus.NotManagedByUs?(WreDns::NameServer, nameserver, WreDns::OldAcomIps, a_record)}".color(Nombus::DebugColor)
+        if Nombus.NotManagedByUs?(WreDns::NameServer, nameserver, WreDns::OldAcomIps, a_record)
           # Ignore if we've already set them up with the current IP.
           unless a_record == WreDns::AcomIp
             info "#{domain}: Not managed by us"
