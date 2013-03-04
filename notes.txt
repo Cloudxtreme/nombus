@@ -1,16 +1,16 @@
-record = Whois.whois(domain.to_s)
-record.registered?
-
 To do:
-	2. Take input from stdin instead of a file?
-	3. Use a config file like .nombusrc
-	4. User yaml to store default config info?
-	5. Dnsruby is doing 2 lookups for each domain name. Should try going back to 1.
-		1. In main(), use dns.getresources(domain)
-		2. returns an array of resrource records
 
+Use a config file like .nombus, use yaml to store config info.
+Exit with error if column index is out of range.
+Add rescue clauses for opening csv files.
+Capture if domain is managed by us, also if it's not pointed at us at all.
+Set up more rspec tests.
+Change default output (non-debug) to be more intuitive.
 
-LookupDomain(
+Backlog features:
+
+Take input from stdin instead of a file.
+Send output to stdout
 
 
 Get exit code of a program: `echo $?`

@@ -34,7 +34,7 @@ class App
       debug "Row array: #{row}".color(Nombus::DebugColor)
       domain_name = row[column]
       if PublicSuffix.valid? domain_name
-        domain = Dnsruby::Name.create row[column]
+        domain = Dnsruby::Name.create domain_name
       else
         warn (message = "#{domain_name}: not a valid domain name").color(Nombus::WarnColor)
         fails << [domain_name, message] if options[:fail]
@@ -42,8 +42,8 @@ class App
       end
     	info "Checking domain: #{domain}"
     	begin
-        nameserver = dns.getresource(domain, Dnsruby::Types.SOA).mname
-        a_record = dns.getresource(domain, Dnsruby::Types.A).address		
+    	  records = dns.getresources(domain, Dnsruby::Types.ANY)
+        nameserver, a_record = Nombus.GetRecords(records)
         # if it doesn't have our namserver but does have one of our
         # old ip addresses then we found one that we want to record.
         debug "#{domain}: using our server? #{WreDns::NameServer == nameserver}".color(Nombus::DebugColor)
@@ -52,14 +52,14 @@ class App
         if Nombus.NotManagedByUs?(WreDns::NameServer, nameserver, WreDns::OldAcomIps, a_record)
           # Ignore if we've already set them up with the current IP.
           unless a_record == WreDns::AcomIp
-            info "#{domain}: Not managed by us"
+            info "#{domain}: Not managed by us".color(Nombus::SuccessColor)
             nombus_domains << row  if options[:output]
           end
         end
       rescue Dnsruby::NXDomain, Dnsruby::ServFail, Dnsruby::ResolvError => dns_error
         message = Nombus::LookupErrorMessage(domain, dns_error)
         warn message.color(Nombus::WarnColor)
-        fails << [domain.to_s, message, dns_error.class.to_s] if options[:fail]
+        fails << [domain.to_s, message] if options[:fail]
         next
       end
     end

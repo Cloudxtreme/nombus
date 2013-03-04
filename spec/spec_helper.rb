@@ -1,1 +1,2 @@
+require 'methadone'
 require 'nombus'
