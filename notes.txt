@@ -1,0 +1,28 @@
+record = Whois.whois(domain.to_s)
+record.registered?
+
+To do:
+	2. Take input from stdin instead of a file?
+	3. Use a config file like .nombusrc
+	4. User yaml to store default config info?
+	5. Dnsruby is doing 2 lookups for each domain name. Should try going back to 1.
+		1. In main(), use dns.getresources(domain)
+		2. returns an array of resrource records
+
+
+LookupDomain(
+
+
+Get exit code of a program: `echo $?`
+
+Commands
+bundle exec nombus -s tab --log-level debug tmp/test_domains-tabs.csv
+bundle exec nombus --no-headers --log-level debug tmp/test_domains-no_headers.csv
+include DEBUG=true with command in order to see stack trace.
+Example: DEBUG=true bundle exec nombus -c 0 --log-level debug tmp/test_domains-short.csv
+
+dns config example
+dns = DNS.new( {:nameserver=>["8.8.8.8", "8.8.4.4"], :search=>["withwre.com", "mywindermere.com"], :ndots=>1} )
+
+Shouldln't show: bruceclouse.com
+ar = dns.getresource('bruceclouse.com', Types.A).address	

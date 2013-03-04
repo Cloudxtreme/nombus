@@ -5,37 +5,86 @@ require 'methadone'
 require 'nombus'
 require 'csv'
 require 'dnsruby'
+require 'public_suffix'
+require 'wre_dns'
+require 'rainbow'
 
 class App
   include Methadone::Main
   include Methadone::CLILogging
 
-  main do |input_file, output_file|
-    domain_file = CSV.open(input_file)
-    output_file = Nombus::OutputFileName if not output_file
-    nombus_domains = CSV.open(output_file, "wb")
+  main do |input_file|
+    debug "Column index: #{options[:column]}".color(Nombus::DebugColor)
+    column = Nombus::GetColumnIndex(options[:column])
+    debug "Separator is: #{options[:separator]}".color(Nombus::DebugColor)
+    separator = Nombus::GetSeparator(options[:separator])
+    dns = Dnsruby::DNS.new :nameserver => options[:nameservers].split
+    debug "Using namservers: #{dns.config.nameserver.join(', ')}".color(Nombus::DebugColor)
+    domain_file = CSV.open(input_file, :col_sep => separator)
+    nombus_domains = CSV.open(options[:output], "wb", :col_sep => separator) if options[:output]
+    debug "Use headers? #{options['no-headers']}".color(Nombus::DebugColor)
     # Add headers from 1st line to output if there are any
-    nombus_domains << domain_file.readline unless options['no-headers']
-    column = options['column'].to_i
+    headers =  domain_file.readline unless options['no-headers']
+    nombus_domains << headers if options[:output]
+    if options[:fail]
+      fails = CSV.open(options[:fail], "wb")
+      fails << Nombus::FailHeaders
+    end
     domain_file.each do |row|
-    	domain = Dnsruby::Name.create row[column]
-    	info 'Checking domain: ' + domain.to_s
+      debug "Row array: #{row}".color(Nombus::DebugColor)
+      domain_name = row[column]
+      if PublicSuffix.valid? domain_name
+        domain = Dnsruby::Name.create row[column]
+      else
+        warn (message = "#{domain_name}: not a valid domain name").color(Nombus::WarnColor)
+        fails << [domain_name, message] if options[:fail]
+        next
+      end
+    	info "Checking domain: #{domain}"
+    	begin
+        nameserver = dns.getresource(domain, Dnsruby::Types.SOA).mname
+        a_record = dns.getresource(domain, Dnsruby::Types.A).address		
+        # if it doesn't have our namserver but does have one of our
+        # old ip addresses then we found one that we want to record.
+        debug "#{domain}: using our server? #{WreDns::NameServer == nameserver}".color(Nombus::DebugColor)
+        debug "#{domain}: using one of our old ips? #{WreDns::OldAcomIps.include? a_record}".color(Nombus::DebugColor)
+        debug "#{domain}: not managed by us? #{Nombus.NotManagedByUs?(WreDns::NameServer, nameserver, WreDns::OldAcomIps, a_record)}".color(Nombus::DebugColor)
+        if Nombus.NotManagedByUs?(WreDns::NameServer, nameserver, WreDns::OldAcomIps, a_record)
+          # Ignore if we've already set them up with the current IP.
+          unless a_record == WreDns::AcomIp
+            info "#{domain}: Not managed by us"
+            nombus_domains << row  if options[:output]
+          end
+        end
+      rescue Dnsruby::NXDomain, Dnsruby::ServFail, Dnsruby::ResolvError => dns_error
+        message = Nombus::LookupErrorMessage(domain, dns_error)
+        warn message.color(Nombus::WarnColor)
+        fails << [domain.to_s, message, dns_error.class.to_s] if options[:fail]
+        next
+      end
     end
   end
   
   # Configure command line options/arguments and build the help menu.
-  version Nombus::Version
-  description 'Check if domain names are managed by Windermere DNS servers'
-  options['separator'] = Nombus::DefaultSeparator
-  on "-s SEPARATOR", "--separator","Column separator for csv file"
-  options['column'] = Nombus::Column
-  on "-c", "--column", "The column where the domain name is stored in the csv file"
-  options['nameservers'] = Nombus::DefaultNameservers
-  on "-n LIST", "--nameservers",	"The list of nameservers to query"
-  on "--no-headers", "Specify if the csv file has no headers, default assumes headers exist"
+  on("-v", "--version", "Print the version number & quit") do
+    info "nombus #{Nombus::Version}"
+    exit
+  end
+  description 'Check a CSV file for domain names that are not managed by Windermere DNS servers.'
+  options[:separator] = Nombus::DefaultSeparator
+  on "-s CHARACTER", "--separator", "Column separator for csv file. Use 'tab' to indicate tabs."
+  options[:column] = Nombus::Column
+  on "-c NUMBER", "--column", "The column where the domain name is stored in the csv file, starting at 1"
+  options[:nameservers] = Nombus::DefaultNameservers
+  on "-n 'SRVR1 SRVR2'", "--nameservers",	"A quoted list of nameservers to use for queries"
+  on("--no-headers","Specify that the csv file has no headers, default assumes headers exist") do
+    # Methadone sets this to false for some reason if 'no' is at beginning of op so doing it manually
+    options['no-headers'] = true
+  end
+  on "-o PATH/FILE.CSV", "--output", "Specify a path where you would like records for domains that are not managed by us to be captured."
+  on "-f PATH/FILE.CSV", "--fail", "Specify a path where you would like records for domains that failed dns lookup"
   arg :csv_file, "Path to a CSV file with a list of domain names"
-  arg :output_file, :optional, "Path to a CSV file which only includes domains that are not managed by Windermere. If none specified then current working directory."
   use_log_level_option
-
+  
   go!
 end

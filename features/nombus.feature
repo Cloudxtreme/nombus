@@ -25,7 +25,7 @@ Feature: Check if domain names are managed by Windermere DNS servers
 
 	Scenario: Default Execution
 		Given a csv file containing domain names at "test/test_domains-short.csv"
-		When I successfully run `nombus test/test_domains-short.csv`
+		When I successfully run `bundle exec nombus test/test_domains-short.csv`
 		Then the output should contain "Checking domain"
 		And it should create a new csv file in the current working directory called "nombus_domains.csv"
 		And "nombus_domains.csv" should have headers on the first row
