@@ -14,6 +14,7 @@ class App
   include Methadone::CLILogging
 
   main do |input_file|
+    
     debug "Column index: #{options[:column]}".color(Nombus::DebugColor)
     column = Nombus::GetColumnIndex(options[:column])
     debug "Separator is: #{options[:separator]}".color(Nombus::DebugColor)
@@ -30,6 +31,7 @@ class App
       fails = CSV.open(options[:fail], "wb")
       fails << Nombus::FailHeaders
     end
+    
     domain_file.each do |row|
       debug "Row array: #{row}".color(Nombus::DebugColor)
       domain_name = row[column]
@@ -40,7 +42,6 @@ class App
         fails << [domain_name, message] if options[:fail]
         next
       end
-    	info "Checking domain: #{domain}"
     	begin
     	  records = dns.getresources(domain, Dnsruby::Types.ANY)
         nameserver, a_record = Nombus.GetRecords(records)
@@ -49,12 +50,17 @@ class App
         debug "#{domain}: using our server? #{WreDns::NameServer == nameserver}".color(Nombus::DebugColor)
         debug "#{domain}: using one of our old ips? #{WreDns::OldAcomIps.include? a_record}".color(Nombus::DebugColor)
         debug "#{domain}: not managed by us? #{Nombus.NotManagedByUs?(WreDns::NameServer, nameserver, WreDns::OldAcomIps, a_record)}".color(Nombus::DebugColor)
-        if Nombus.NotManagedByUs?(WreDns::NameServer, nameserver, WreDns::OldAcomIps, a_record)
+        if Nombus.NotManagedByUs? WreDns::NameServer, nameserver, WreDns::OldAcomIps, a_record
           # Ignore if we've already set them up with the current IP.
           unless a_record == WreDns::AcomIp
             info "#{domain}: Not managed by us".color(Nombus::SuccessColor)
             nombus_domains << row  if options[:output]
           end
+        elsif Nombus.NotPointedAtUs? WreDns::AllAcomIps,  a_record
+          warn (message = "#{domain}: Not pointed at us").color(Nombus::WarnColor)
+          fails << [domain_name, message] if options[:fail]
+        else
+          info "#{domain}: Managed by us"
         end
       rescue Dnsruby::NXDomain, Dnsruby::ServFail, Dnsruby::ResolvError => dns_error
         message = Nombus::LookupErrorMessage(domain, dns_error)
@@ -63,6 +69,7 @@ class App
         next
       end
     end
+    
   end
   
   # Configure command line options/arguments and build the help menu.

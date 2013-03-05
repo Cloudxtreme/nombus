@@ -3,10 +3,12 @@ require 'spec_helper'
 
 describe Nombus do
   
+  before do
+    @dns = Dnsruby::DNS.new :nameserver => ["8.8.8.8", "8.8.4.4"]
+  end
+  
   describe ".GetRecords" do
-    
     before do
-      @dns = Dnsruby::DNS.new :nameserver => Nombus::DefaultNameservers.split
       @records = @dns.getresources('adamwgriffin.com', Dnsruby::Types.ANY)
       @nameserver, @a_record = Nombus.GetRecords(@records)
     end
@@ -31,6 +33,25 @@ describe Nombus do
       
     end
     
+  end
+  
+  describe ".NotPointedAtUs?" do
+    
+    before do
+      @pointed_a = Dnsruby::IPv4.create('184.72.38.12')
+      @not_pointed_a = Dnsruby::IPv4.create('208.91.197.27')
+      @pointed_result = Nombus.NotPointedAtUs?(WreDns::AllAcomIps, @pointed_a)
+      @not_pointed_result = Nombus.NotPointedAtUs?(WreDns::AllAcomIps, @not_pointed_a)
+    end
+    
+    it "should return true if the domain is not pointed at us" do
+      @not_pointed_result.should eql true
+    end
+    
+    it "should return false if the domain is pointed at us" do
+      @pointed_result.should eql false
+    end
+  
   end
   
 end

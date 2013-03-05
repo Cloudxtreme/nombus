@@ -3,9 +3,9 @@ To do:
 Use a config file like .nombus, use yaml to store config info.
 Exit with error if column index is out of range.
 Add rescue clauses for opening csv files.
-Capture if domain is managed by us, also if it's not pointed at us at all.
 Set up more rspec tests.
 Change default output (non-debug) to be more intuitive.
+Check if using PAWs IP? example: aaronsod.com
 
 Backlog features:
 
@@ -25,4 +25,10 @@ dns config example
 dns = DNS.new( {:nameserver=>["8.8.8.8", "8.8.4.4"], :search=>["withwre.com", "mywindermere.com"], :ndots=>1} )
 
 Shouldln't show: bruceclouse.com
-ar = dns.getresource('bruceclouse.com', Types.A).address	
+ar = dns.getresource('bruceclouse.com', Types.A).address
+
+aaronsod.com - has old paws ip
+ns1.windermere.com.
+ns3.windermere.com.
+ns2.windermere.com.
+205.234.73.177

@@ -8,4 +8,6 @@ module WreDns
   Slave3 = Dnsruby::Name.create('ns3.windermere.com.')
   OldAcomIps = [ Dnsruby::IPv4.create('50.18.188.104'), Dnsruby::IPv4.create('184.72.38.12') ]
   AcomIp = Dnsruby::IPv4.create('205.234.73.173')
+  PawsIp = Dnsruby::IPv4.create('205.234.73.177')
+  AllAcomIps = OldAcomIps << AcomIp << PawsIp
 end

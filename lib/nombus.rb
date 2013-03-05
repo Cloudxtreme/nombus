@@ -40,11 +40,15 @@ module Nombus
   	(our_ns != their_ns) and (our_ips.include? their_ip)
   end
   
+  def Nombus.NotPointedAtUs?(our_ips, their_ip)
+    not our_ips.include? their_ip
+  end
+  
   def Nombus.LookupErrorMessage(domain, error)
     # Lookup with whois first to see if domain is even registered
     record = Whois.whois(domain.to_s)
     if record.available?
-      return "#{domain}: not a registered domain name"
+      return "#{domain}: Not a registered domain name"
     end
     # Try to explain other errors as best as possible
     case error
