@@ -32,8 +32,8 @@ class App
       fails << Nombus::FailHeaders
     end
     
-    domain_file.each do |row|
-      debug "Row array: #{row}".color(Nombus::DebugColor)
+    domain_file.each_with_index do |row, row_num|
+      debug "Row #{row_num+1}: #{row}".color(Nombus::DebugColor)
       domain_name = row[column]
       if PublicSuffix.valid? domain_name
         domain = Dnsruby::Name.create domain_name
@@ -43,7 +43,7 @@ class App
         next
       end
     	begin
-    	  records = dns.getresources(domain, Dnsruby::Types.ANY)
+    	  records = dns.getresources(domain, 'any')
         nameserver, a_record = Nombus.GetRecords(records)
         # if it doesn't have our namserver but does have one of our
         # old ip addresses then we found one that we want to record.

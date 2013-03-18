@@ -1,11 +1,9 @@
 To do:
 
-Use a config file like .nombus, use yaml to store config info.
+Check if using PAWs IP? example: aaronsod.com
 Exit with error if column index is out of range.
 Add rescue clauses for opening csv files.
-Set up more rspec tests.
-Change default output (non-debug) to be more intuitive.
-Check if using PAWs IP? example: aaronsod.com
+Use a config file like .nombus, use yaml to store config info.
 
 Backlog features:
 
