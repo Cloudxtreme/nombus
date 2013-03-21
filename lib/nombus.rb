@@ -2,24 +2,28 @@ require "nombus/version"
 require "dnsruby"
 require "whois"
 require "wre_dns"
+require "pry"
+require "pry-debugger"
+require "yaml"
+
+CONFIG = YAML::load(File.open('../nombus.rc.yml'))
 
 module Nombus
-  
   class Configurator
     
-    DefaultSeparator = ','
-    # Using Google's public namerservers by default for DNS lookups.
-    # There are several domains that were configured on nsmaster
-    # that actually are not pointing at our nameserver anymore.
-    # Using the defaults was masking this problem when running
-    # the script on our network.
-    DefaultNameservers = '8.8.8.8 8.8.4.4'
-    Column = '1'
-    FailHeaders = ["Domain", "Error"]
-    SuccessColor = :green
-    DebugColor = :magenta
-    WarnColor = :yellow
-    ErrorColor = :red
+    def initialize(config)
+      @fail_headers = ["domain", "error"]
+      @separator = config['separator']
+      @nameservers = config['nameservers']
+      @column = config['column']
+      @success_color = config['success_color'].to_sym
+      @debug_color = config['debug_color'].to_sym
+      @warn_color = config['warn_color'].to_sym
+      @error_color = config['error_color'].to_sym
+    end
+    
+    attr_accessor :fail_headers, :separator, :success_color, :debug_color, :warn_color, :error_color
+    attr_writer :column
     
     def check_column(column)
       case column
@@ -30,27 +34,21 @@ module Nombus
       end
     end
     
-    def get_column(column)
+    def column
       # Internally csv starts at 0, but command option starts at 1, & is string
-      column.to_i - 1
+      @column.to_i - 1
     end
     
     def check_separator(separator)
-      case separator
-      when /\s/
+      if separator =~ /\s/
         "Error: Separator can't be a literal whitspace character. Use 'tab' for tabs"
       end
     end
     
     def get_separator(separator)
-      case separator
-      when 'tab' # Can't use literal tab on command line
-        return "\t"
-      else
-        separator
-      end
+      # Can't use literal tab on command line
+      separator == 'tab' ? "\t" : separator
     end
-    
   end
   
   class LookerUpper < Dnsruby::DNS
@@ -58,9 +56,9 @@ module Nombus
     include WreDns
 
     def get_records(rr)
-      nameserver = rr.find {|r| r.type == 'SOA'}.mname
-      a_record = rr.find {|r| r.type == 'A'}.address
-      return nameserver, a_record
+      ns = rr.find {|r| r.type == 'SOA'}.mname.to_s
+      a = rr.find {|r| r.type == 'A'}.address.to_s
+      return ns, a
     end
 
     def not_managed_by_us?(ns, ip)
@@ -69,26 +67,22 @@ module Nombus
     	(NameServer::Master != ns) && (AgentWebsites::Old_acom_ips.include? ip)
     end
 
-    def not_pointed_at_us?(their_ip)
-      not AgentWebsites::All_acom_ips.include? their_ip
+    def not_pointed_at_us?(ip)
+      not AgentWebsites::All_acom_ips.include? ip
     end
 
     def lookup_error_message(domain, error)
       # See if domain is even registered 1st
       if Whois.whois(domain.to_s).available?
         return "#{domain}: Not a registered domain name"
-      end
       # Try to explain other errors as best as possible
-      case error
-      when NXDomain
+      elsif error == NXDomain
         return "No records found for #{domain}"
-      when ServFail
+      elsif error == ServFail
         return "Lookup failed for #{domain}"
-      when ResolvError
+      elsif error == ResolvError
         return "DNS result has no information for #{domain}"
       end
     end
-
   end
-
 end

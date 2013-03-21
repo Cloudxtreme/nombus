@@ -1,3 +1,5 @@
 require 'methadone'
 require 'nombus'
+require 'dnsruby'
+require 'public_suffix'
 require 'wre_dns'

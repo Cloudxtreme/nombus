@@ -1,0 +1,12 @@
+separator: ","
+# Using Google's public namerservers by default for DNS lookups.
+# There are several domains that were configured on nsmaster
+# that actually are not pointing at our nameserver anymore.
+# Using the defaults was masking this problem when running
+# the script on our network.
+nameservers: 8.8.8.8 8.8.4.4
+column: "1"
+success_color: green
+debug_color: magenta
+warn_color: yellow
+error_color: red
