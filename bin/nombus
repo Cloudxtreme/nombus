@@ -4,50 +4,52 @@ require 'optparse'
 require 'methadone'
 require 'nombus'
 require 'csv'
-require 'dnsruby'
-require 'public_suffix'
-require 'wre_dns'
 require 'rainbow'
 
 class App
   include Methadone::Main
   include Methadone::CLILogging
-
+  
+  config = Configurator.new( YAML::load( File.open('nombus.rc.yml') ) )
+  
   main do |input_file|
-    
-    debug "Column index: #{options[:column]}".color(Nombus::DebugColor)
-    column = Nombus::GetColumnIndex(options[:column])
-    debug "Separator is: #{options[:separator]}".color(Nombus::DebugColor)
-    separator = Nombus::GetSeparator(options[:separator])
-    dns = Dnsruby::DNS.new :nameserver => options[:nameservers].split
-    debug "Using namservers: #{dns.config.nameserver.join(', ')}".color(Nombus::DebugColor)
-    domain_file = CSV.open(input_file, :col_sep => separator)
-    nombus_domains = CSV.open(options[:output], "wb", :col_sep => separator) if options[:output]
-    debug "Use headers? #{options['no-headers']}".color(Nombus::DebugColor)
+    error = if column_error(options[:column])
+      exit_now! error
+    else
+      config.column = options[:column]
+    end
+    error = if separator_error(options[:separator])
+      exit_now! error
+    else
+      config.separator = options[:separator]
+    end
+    dns = Nombus::LookerUpper.new( :nameserver => config.nameservers.split )
+    domain_file = CSV.open(input_file, :col_sep => config.separator)
+    nombus_domains = CSV.open(options[:output], "wb", :col_sep => config.separator) if options[:output]
     # Add headers from 1st line to output if there are any
     headers =  domain_file.readline unless options['no-headers']
     nombus_domains << headers if options[:output]
     if options[:fail]
       fails = CSV.open(options[:fail], "wb")
-      fails << Nombus::FailHeaders
+      fails << config.fail_headers
     end
     
     domain_file.each_with_index do |row, row_num|
-      debug "Row #{row_num+1}: #{row}".color(Nombus::DebugColor)
-      domain_name = row[column]
-      if PublicSuffix.valid? domain_name
-        domain = Dnsruby::Name.create domain_name
-      else
-        warn (message = "#{domain_name}: not a valid domain name").color(Nombus::WarnColor)
-        fails << [domain_name, message] if options[:fail]
+      debug "Row #{row_num+1}: #{row}".color(config.debug_color)
+      domain = row[config.column]
+      if not PublicSuffix.valid? domain
+        warn (message = "#{domain}: not a valid domain name").color(config.warn_color)
+        fails << [domain, message] if options[:fail]
         next
       end
     	begin
     	  records = dns.getresources(domain, 'any')
-        nameserver, a_record = Nombus.GetRecords(records)
+        nameserver, a_record = dns.get_records(records)
         # if it doesn't have our namserver but does have one of our
         # old ip addresses then we found one that we want to record.
-        debug "#{domain}: using our server? #{WreDns::NameServer == nameserver}".color(Nombus::DebugColor)
+        
+        # Not really sure how to access nameserver and other WreDns classes
+        debug "#{domain}: using our server? #{dns.NameServer::Master == nameserver}".color(Nombus::DebugColor)
         debug "#{domain}: using one of our old ips? #{WreDns::OldAcomIps.include? a_record}".color(Nombus::DebugColor)
         debug "#{domain}: not managed by us? #{Nombus.NotManagedByUs?(WreDns::NameServer, nameserver, WreDns::OldAcomIps, a_record)}".color(Nombus::DebugColor)
         if Nombus.NotManagedByUs? WreDns::NameServer, nameserver, WreDns::OldAcomIps, a_record
@@ -78,11 +80,11 @@ class App
     exit
   end
   description 'Check a CSV file for domain names that are not managed by Windermere DNS servers.'
-  options[:separator] = Nombus::DefaultSeparator
+  options[:separator] = config.separator
   on "-s CHARACTER", "--separator", "Column separator for csv file. Use 'tab' to indicate tabs."
-  options[:column] = Nombus::Column
+  options[:column] = config.column
   on "-c NUMBER", "--column", "The column where the domain name is stored in the csv file, starting at 1"
-  options[:nameservers] = Nombus::DefaultNameservers
+  options[:nameservers] = config.nameservers
   on "-n 'SRVR1 SRVR2'", "--nameservers",	"A quoted list of nameservers to use for queries"
   on("--no-headers","Specify that the csv file has no headers, default assumes headers exist") do
     # Methadone sets this to false for some reason if 'no' is at beginning of op so doing it manually

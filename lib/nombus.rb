@@ -20,10 +20,10 @@ module Nombus
       @error_color = config['error_color'].to_sym
     end
     
-    attr_accessor :fail_headers, :separator, :success_color, :debug_color, :warn_color, :error_color
-    attr_writer :column
+    attr_accessor :fail_headers, :separator, :nameservers,
+    :column, :success_color, :debug_color, :warn_color, :error_color
     
-    def check_column(column)
+    def column_error(column)
       case column
       when /\D/
         "Error: #{column} is not a valid number"
@@ -32,12 +32,12 @@ module Nombus
       end
     end
     
-    def column
+    def column_index
       # Internally csv starts at 0, but command option starts at 1, & is string
       @column.to_i - 1
     end
     
-    def check_separator(separator)
+    def separator_error(separator)
       if separator =~ /\s/
         "Error: Separator can't be a literal whitspace character. Use 'tab' for tabs"
       end
