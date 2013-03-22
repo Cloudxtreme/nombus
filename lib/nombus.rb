@@ -4,9 +4,7 @@ require "whois"
 require "wre_dns"
 require "pry"
 require "pry-debugger"
-require "yaml"
 
-CONFIG = YAML::load(File.open('../nombus.rc.yml'))
 
 module Nombus
   class Configurator
