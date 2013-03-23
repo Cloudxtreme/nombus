@@ -5,30 +5,26 @@ require 'methadone'
 require 'nombus'
 require 'csv'
 require 'rainbow'
+require 'public_suffix'
+require 'pry'
+require 'pry-debugger'
+
 
 class App
   include Methadone::Main
   include Methadone::CLILogging
   
-  config = Configurator.new( YAML::load( File.open('nombus.rc.yml') ) )
+  config = Nombus::Configurator.new( YAML::load( File.open(Nombus::ConfigFile) ) )
   
   main do |input_file|
-    error = if column_error(options[:column])
-      exit_now! error
-    else
-      config.column = options[:column]
-    end
-    error = if separator_error(options[:separator])
-      exit_now! error
-    else
-      config.separator = options[:separator]
-    end
-    dns = Nombus::LookerUpper.new( :nameserver => config.nameservers.split )
+    config.column = options[:column]
+    config.separator = options[:separator]
+    dns = Nombus::LookerUpper.new( :nameserver => options[:nameservers].split )
     domain_file = CSV.open(input_file, :col_sep => config.separator)
     nombus_domains = CSV.open(options[:output], "wb", :col_sep => config.separator) if options[:output]
     # Add headers from 1st line to output if there are any
     headers =  domain_file.readline unless options['no-headers']
-    nombus_domains << headers if options[:output]
+    nombus_domains << headers if options[:output] unless options['no-headers']
     if options[:fail]
       fails = CSV.open(options[:fail], "wb")
       fails << config.fail_headers
@@ -36,7 +32,7 @@ class App
     
     domain_file.each_with_index do |row, row_num|
       debug "Row #{row_num+1}: #{row}".color(config.debug_color)
-      domain = row[config.column]
+      domain = row[config.column_index]
       if not PublicSuffix.valid? domain
         warn (message = "#{domain}: not a valid domain name").color(config.warn_color)
         fails << [domain, message] if options[:fail]
@@ -47,27 +43,25 @@ class App
         nameserver, a_record = dns.get_records(records)
         # if it doesn't have our namserver but does have one of our
         # old ip addresses then we found one that we want to record.
-        
-        # Not really sure how to access nameserver and other WreDns classes
-        debug "#{domain}: using our server? #{dns.NameServer::Master == nameserver}".color(Nombus::DebugColor)
-        debug "#{domain}: using one of our old ips? #{WreDns::OldAcomIps.include? a_record}".color(Nombus::DebugColor)
-        debug "#{domain}: not managed by us? #{Nombus.NotManagedByUs?(WreDns::NameServer, nameserver, WreDns::OldAcomIps, a_record)}".color(Nombus::DebugColor)
-        if Nombus.NotManagedByUs? WreDns::NameServer, nameserver, WreDns::OldAcomIps, a_record
+        debug "#{domain}: using our server? #{dns.the_master == nameserver}".color(config.debug_color)
+        debug "#{domain}: using one of our old ips? #{dns.old_acom_ips.include? a_record}".color(config.debug_color)
+        debug "#{domain}: not managed by us? #{dns.not_managed_by_us?(nameserver, a_record)}".color(config.debug_color)
+        if dns.not_managed_by_us?(nameserver, a_record)
           # Ignore if we've already set them up with the current IP.
-          unless a_record == WreDns::AcomIp
-            info "#{domain}: Not managed by us".color(Nombus::SuccessColor)
+          unless a_record == dns.acom_ip
+            info "#{domain}: Not managed by us".color(config.success_color)
             nombus_domains << row  if options[:output]
           end
-        elsif Nombus.NotPointedAtUs? WreDns::AllAcomIps,  a_record
-          warn (message = "#{domain}: Not pointed at us").color(Nombus::WarnColor)
-          fails << [domain_name, message] if options[:fail]
+        elsif dns.not_pointed_at_us? a_record
+          warn (message = "#{domain}: Not pointed at us").color(config.warn_color)
+          fails << [domain, message] if options[:fail]
         else
           info "#{domain}: Managed by us"
         end
       rescue Dnsruby::NXDomain, Dnsruby::ServFail, Dnsruby::ResolvError => dns_error
-        message = Nombus::LookupErrorMessage(domain, dns_error)
-        warn message.color(Nombus::WarnColor)
-        fails << [domain.to_s, message] if options[:fail]
+        message = dns.lookup_error_message(domain, dns_error)
+        warn message.color(config.warn_color)
+        fails << [domain, message] if options[:fail]
         next
       end
     end

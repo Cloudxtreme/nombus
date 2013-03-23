@@ -9,6 +9,24 @@ module Nombus
       let(:not_our_ip) {'208.91.197.27'}
       let(:our_old_ip) {'184.72.38.12'}
       let(:our_new_ip) {'205.234.73.173'}
+    
+    describe "#the_master" do
+      it "returns the domain name for or master nameserver, not to be confused with Philip Seymour Hoffman" do
+        dns.the_master.should == our_nameserver
+      end
+    end
+    
+    describe "#old_acom_ips" do
+      it "returns a list of our old a.com IP addresses" do
+        dns.old_acom_ips.should include(our_old_ip)
+      end
+    end
+    
+    describe "#acom_ip" do
+      it "returns the current IP for Agent Websites" do
+        dns.acom_ip.should == our_new_ip
+      end
+    end
   
     describe "#get_records" do
       before do

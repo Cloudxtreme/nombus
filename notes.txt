@@ -1,9 +1,12 @@
 To do:
 
-Check if using PAWs IP? example: aaronsod.com
+Get rid of WreDns, add nameserver, etc. to LookerUpper.
 Exit with error if column index is out of range.
-Add rescue clauses for opening csv files.
-Use a config file like .nombus, use yaml to store config info.
+Need to handle error if wrong separator specified using -s, e.g. tab when the file has commas. It's hard to detect what the separator should acutally be in any given situation. Better to try to exit with a helpful error if the field generated is not a domain name.
+Figure out how to pass a | character on command line
+Check if using PAWs IP? example: aaronsod.com
+Add rescue clauses for opening csv files. or maybe nombus will handle those error.
+allw rc config file in user's home directory, see example in book
 
 Backlog features:
 
@@ -14,6 +17,7 @@ Send output to stdout
 Get exit code of a program: `echo $?`
 
 Commands
+DEBUG=true bundle exec nombus --log-level debug tmp/test_domains-short.csv
 bundle exec nombus -s tab --log-level debug tmp/test_domains-tabs.csv
 bundle exec nombus --no-headers --log-level debug tmp/test_domains-no_headers.csv
 include DEBUG=true with command in order to see stack trace.
@@ -30,3 +34,30 @@ ns1.windermere.com.
 ns3.windermere.com.
 ns2.windermere.com.
 205.234.73.177
+
+
+
+Usage: nombus [options] csv_file
+
+Check a CSV file for domain names that are not managed by Windermere DNS servers.
+
+Options:
+    -h, --help                       Show command line help
+    -v, --version                    Print the version number & quit
+    -s, --separator CHARACTER        Column separator for csv file. Use 'tab' to indicate tabs.
+                                     (default: ,)
+    -c, --column NUMBER              The column where the domain name is stored in the csv file, starting at 1
+                                     (default: 1)
+    -n, --nameservers 'SRVR1 SRVR2'  A quoted list of nameservers to use for queries
+                                     (default: 8.8.8.8 8.8.4.4)
+        --no-headers                 Specify that the csv file has no headers, default assumes headers exist
+    -o, --output PATH/FILE.CSV       Specify a path where you would like records for domains that are not managed by us to be captured.
+    -f, --fail PATH/FILE.CSV         Specify a path where you would like records for domains that failed dns lookup
+        --log-level LEVEL            Set the logging level
+                                     (debug|info|warn|error|fatal)
+                                     (Default: info)
+
+Arguments:
+
+    csv_file
+        Path to a CSV file with a list of domain names

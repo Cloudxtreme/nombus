@@ -7,6 +7,9 @@ require "pry-debugger"
 
 
 module Nombus
+  
+  ConfigFile = 'nombus.rc.yml'
+  
   class Configurator
     
     def initialize(config)
@@ -20,15 +23,19 @@ module Nombus
       @error_color = config['error_color'].to_sym
     end
     
-    attr_accessor :fail_headers, :separator, :nameservers,
-    :column, :success_color, :debug_color, :warn_color, :error_color
+    attr_accessor :fail_headers, :nameservers,
+    :success_color, :debug_color, :warn_color, :error_color
     
-    def column_error(column)
-      case column
+    attr_reader :column, :separator
+    
+    def column=(col)
+      case col
       when /\D/
-        "Error: #{column} is not a valid number"
+        raise "Error: #{col} is not a valid number"
       when '0'
-        "Error: column number must be greater than 0"
+        raise "Error: column number must be greater than 0"
+      else
+        @column = col
       end
     end
     
@@ -37,22 +44,34 @@ module Nombus
       @column.to_i - 1
     end
     
-    def separator_error(separator)
-      if separator =~ /\s/
-        "Error: Separator can't be a literal whitspace character. Use 'tab' for tabs"
+    def separator=(sep)
+      case sep
+      when /\s/
+        raise "Error: Separator can't be a literal whitspace character. Use 'tab' for tabs"
+      when 'tab' # Can't use literal tab on command line
+        @separator = "\t"
+      else
+        @separator = sep
       end
-    end
-    
-    def get_separator(separator)
-      # Can't use literal tab on command line
-      separator == 'tab' ? "\t" : separator
     end
   end
   
   class LookerUpper < Dnsruby::DNS
     include Dnsruby
     include WreDns
-
+    
+    def the_master
+      NameServer::Master
+    end
+    
+    def old_acom_ips
+      AgentWebsites::Old_acom_ips
+    end
+    
+    def acom_ip
+      AgentWebsites::Acom_ip
+    end
+    
     def get_records(rr)
       ns = rr.find {|r| r.type == 'SOA'}.mname.to_s
       a = rr.find {|r| r.type == 'A'}.address.to_s
@@ -62,7 +81,7 @@ module Nombus
     def not_managed_by_us?(ns, ip)
       # Return true if it's not our nameserver,
       # but does use one of the old a.com IPs.
-    	(NameServer::Master != ns) && (AgentWebsites::Old_acom_ips.include? ip)
+    	(the_master != ns) && (AgentWebsites::Old_acom_ips.include? ip)
     end
 
     def not_pointed_at_us?(ip)
