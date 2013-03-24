@@ -7,26 +7,30 @@ require "pry-debugger"
 
 
 module Nombus
-  
   ConfigFile = 'nombus.rc.yml'
   
-  class Configurator
-    
+  class Configurator 
     def initialize(config)
       @fail_headers = ["domain", "error"]
       @separator = config['separator']
-      @nameservers = config['nameservers']
-      @column = config['column']
+      @lookup_servers = config['lookup_servers'].split
+      @column = config['column'].to_s # column needs to be a string for setter to work right
       @success_color = config['success_color'].to_sym
       @debug_color = config['debug_color'].to_sym
       @warn_color = config['warn_color'].to_sym
       @error_color = config['error_color'].to_sym
+      @our_nameserver = config['our_nameserver']
+      @old_acom_ips = config['old_ips'].split
+      @acom_ip = config['current_ip']
+      @paws_ip = config['paws_ip']
+      @all_acom_ips = [*@old_acom_ips, @acom_ip, @paws_ip]
     end
     
-    attr_accessor :fail_headers, :nameservers,
+    attr_accessor :fail_headers, :lookup_servers,
     :success_color, :debug_color, :warn_color, :error_color
     
-    attr_reader :column, :separator
+    attr_reader :column, :separator,
+    :our_nameserver, :old_acom_ips, :acom_ip, :paws_ip, :all_acom_ips
     
     def column=(col)
       case col
@@ -58,18 +62,12 @@ module Nombus
   
   class LookerUpper < Dnsruby::DNS
     include Dnsruby
-    include WreDns
     
-    def the_master
-      NameServer::Master
-    end
-    
-    def old_acom_ips
-      AgentWebsites::Old_acom_ips
-    end
-    
-    def acom_ip
-      AgentWebsites::Acom_ip
+    def initialize(our_server, old_acom_ips, all_acom_ips, lookup_servers)
+      @our_server = our_server
+      @old_acom_ips = old_acom_ips
+      @all_acom_ips = all_acom_ips
+      super(:nameserver => lookup_servers)
     end
     
     def get_records(rr)
@@ -81,11 +79,11 @@ module Nombus
     def not_managed_by_us?(ns, ip)
       # Return true if it's not our nameserver,
       # but does use one of the old a.com IPs.
-    	(the_master != ns) && (AgentWebsites::Old_acom_ips.include? ip)
+    	(@our_server != ns) && (@old_acom_ips.include? ip)
     end
 
     def not_pointed_at_us?(ip)
-      not AgentWebsites::All_acom_ips.include? ip
+      not @all_acom_ips.include? ip
     end
 
     def lookup_error_message(domain, error)

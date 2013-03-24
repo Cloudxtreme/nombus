@@ -13,13 +13,18 @@ require 'pry-debugger'
 class App
   include Methadone::Main
   include Methadone::CLILogging
+  include Nombus
   
-  config = Nombus::Configurator.new( YAML::load( File.open(Nombus::ConfigFile) ) )
+  config = Configurator.new( YAML::load( File.open(ConfigFile) ) )
   
   main do |input_file|
+    # Override defaults with command line options
     config.column = options[:column]
     config.separator = options[:separator]
-    dns = Nombus::LookerUpper.new( :nameserver => options[:nameservers].split )
+    config.lookup_servers = options[:nameservers]
+    
+    dns = LookerUpper.new(config.our_nameserver, config.old_acom_ips, config.all_acom_ips, config.lookup_servers)
+    
     domain_file = CSV.open(input_file, :col_sep => config.separator)
     nombus_domains = CSV.open(options[:output], "wb", :col_sep => config.separator) if options[:output]
     # Add headers from 1st line to output if there are any
@@ -43,7 +48,7 @@ class App
         nameserver, a_record = dns.get_records(records)
         # if it doesn't have our namserver but does have one of our
         # old ip addresses then we found one that we want to record.
-        debug "#{domain}: using our server? #{dns.the_master == nameserver}".color(config.debug_color)
+        debug "#{domain}: using our server? #{dns.our_server == nameserver}".color(config.debug_color)
         debug "#{domain}: using one of our old ips? #{dns.old_acom_ips.include? a_record}".color(config.debug_color)
         debug "#{domain}: not managed by us? #{dns.not_managed_by_us?(nameserver, a_record)}".color(config.debug_color)
         if dns.not_managed_by_us?(nameserver, a_record)
@@ -70,7 +75,7 @@ class App
   
   # Configure command line options/arguments and build the help menu.
   on("-v", "--version", "Print the version number & quit") do
-    info "nombus #{Nombus::Version}"
+    info "nombus #{Version}"
     exit
   end
   description 'Check a CSV file for domain names that are not managed by Windermere DNS servers.'
@@ -78,8 +83,8 @@ class App
   on "-s CHARACTER", "--separator", "Column separator for csv file. Use 'tab' to indicate tabs."
   options[:column] = config.column
   on "-c NUMBER", "--column", "The column where the domain name is stored in the csv file, starting at 1"
-  options[:nameservers] = config.nameservers
-  on "-n 'SRVR1 SRVR2'", "--nameservers",	"A quoted list of nameservers to use for queries"
+  options[:nameservers] = config.lookup_servers
+  on "-n 'SRVR1 SRVR2'", "--nameservers",	"A quoted list of nameservers to use for lookup queries"
   on("--no-headers","Specify that the csv file has no headers, default assumes headers exist") do
     # Methadone sets this to false for some reason if 'no' is at beginning of op so doing it manually
     options['no-headers'] = true

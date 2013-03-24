@@ -6,7 +6,7 @@ module Nombus
     let(:rc_path) { File.join NOMBUS_DIR, 'nombus.rc.yml' }
     let(:yaml_config) { YAML::load( File.open(rc_path) ) }
     let(:config)  { Configurator.new(yaml_config) }
-    let(:column_minus_1) { yaml_config['column'].to_i - 1 }
+    let(:column_minus_1) { yaml_config['column'] - 1 }
     
     describe "#column=" do
       it "raises an error if column is not a number" do

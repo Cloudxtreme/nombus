@@ -4,9 +4,14 @@ separator: ","
 # that actually are not pointing at our nameserver anymore.
 # Using the defaults was masking this problem when running
 # the script on our network.
-nameservers: 8.8.8.8 8.8.4.4
-column: "1"
+lookup_servers: 8.8.8.8 8.8.4.4
+column: 1
 success_color: green
 debug_color: magenta
 warn_color: yellow
 error_color: red
+# Windermere DNS info
+our_nameserver: nsmaster.windermere.com
+old_ips: 50.18.188.104 184.72.38.12
+current_ip: 205.234.73.177
+paws_ip: 205.234.73.177
