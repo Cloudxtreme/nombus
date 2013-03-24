@@ -53,7 +53,7 @@ class App
         debug "#{domain}: not managed by us? #{dns.not_managed_by_us?(nameserver, a_record)}".color(config.debug_color)
         if dns.not_managed_by_us?(nameserver, a_record)
           # Ignore if we've already set them up with the current IP.
-          unless a_record == dns.acom_ip
+          unless a_record == config.acom_ip
             info "#{domain}: Not managed by us".color(config.success_color)
             nombus_domains << row  if options[:output]
           end

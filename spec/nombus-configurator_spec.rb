@@ -2,9 +2,7 @@ require 'spec_helper'
 
 module Nombus
   describe Configurator do
-    # Get the path to the config file above the current directory
-    let(:rc_path) { File.join NOMBUS_DIR, 'nombus.rc.yml' }
-    let(:yaml_config) { YAML::load( File.open(rc_path) ) }
+    let(:yaml_config) { YAML.load( File.open(CONFIG_PATH) ) }
     let(:config)  { Configurator.new(yaml_config) }
     let(:column_minus_1) { yaml_config['column'] - 1 }
     

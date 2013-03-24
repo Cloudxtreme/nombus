@@ -2,29 +2,27 @@ require 'spec_helper'
 
 module Nombus
   describe LookerUpper do
-      let(:dns) { LookerUpper.new :nameserver => ["8.8.8.8", "8.8.4.4"] }
+      # Re-typing dns info here instead of loading config file
+      # in order to expose bugs with incorrect configuration
       let(:regstered_domain) {'dokken.com'}
       let(:our_nameserver) {'nsmaster.windermere.com'}
       let(:not_our_nameserver) {'ns1dhl.name.com'}
       let(:not_our_ip) {'208.91.197.27'}
-      let(:our_old_ip) {'184.72.38.12'}
+      let(:our_old_ips) { %w[50.18.188.104 184.72.38.12] }
+      let(:old_ip) { our_old_ips[1] }
       let(:our_new_ip) {'205.234.73.173'}
-    
-    describe "#the_master" do
-      it "returns the domain name for or master nameserver, not to be confused with Philip Seymour Hoffman" do
-        dns.the_master.should == our_nameserver
+      let (:dns) do
+        LookerUpper.new(
+          our_nameserver,
+          our_old_ips,
+          [our_new_ip, *our_old_ips, '205.234.73.177'],
+          %w[8.8.8.8 8.8.4.4]
+        )
       end
-    end
     
     describe "#old_acom_ips" do
       it "returns a list of our old a.com IP addresses" do
-        dns.old_acom_ips.should include(our_old_ip)
-      end
-    end
-    
-    describe "#acom_ip" do
-      it "returns the current IP for Agent Websites" do
-        dns.acom_ip.should == our_new_ip
+        dns.old_acom_ips.should include(old_ip)
       end
     end
   
@@ -45,7 +43,7 @@ module Nombus
 
     describe "#not_managed_by_us?" do
       it "returns true if the domain is not managed by us, but points at our cuurent IP" do
-        dns.not_managed_by_us?(not_our_nameserver, our_old_ip).should be_true
+        dns.not_managed_by_us?(not_our_nameserver, old_ip).should be_true
       end
       
       it "returns false if the domain does use our nameserver or doesn't use one of our old IPs" do
@@ -59,7 +57,7 @@ module Nombus
       end
     
       it "returns false if the domain is pointed at us" do
-        dns.not_pointed_at_us?(our_old_ip).should be_false
+        dns.not_pointed_at_us?(old_ip).should be_false
       end
     end
     

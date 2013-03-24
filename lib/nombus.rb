@@ -1,7 +1,6 @@
 require "nombus/version"
 require "dnsruby"
 require "whois"
-require "wre_dns"
 require "pry"
 require "pry-debugger"
 
@@ -69,6 +68,8 @@ module Nombus
       @all_acom_ips = all_acom_ips
       super(:nameserver => lookup_servers)
     end
+    
+    attr_reader :our_server, :old_acom_ips, :all_acom_ips
     
     def get_records(rr)
       ns = rr.find {|r| r.type == 'SOA'}.mname.to_s
