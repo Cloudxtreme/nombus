@@ -1,11 +1,11 @@
 To do:
 
-Exit with error if column index is out of range.
 Need to handle error if wrong separator specified using -s, e.g. tab when the file has commas. It's hard to detect what the separator should acutally be in any given situation. Better to try to exit with a helpful error if the field generated is not a domain name.
 Figure out how to pass a | character on command line
 Check if using PAWs IP? example: aaronsod.com
-Add rescue clauses for opening csv files. or maybe nombus will handle those error.
-allw rc config file in user's home directory, see example in book
+Add rescue clauses for opening csv files, or maybe nombus will handle those error.
+Allow rc config file in user's home directory, see example in book
+Add method to Configurator that will reprot it's state so I can have one debug line that shows all the options.
 
 Backlog features:
 

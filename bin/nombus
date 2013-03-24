@@ -23,18 +23,24 @@ class App
     config.separator = options[:separator]
     config.lookup_servers = options[:nameservers]
     
-    dns = LookerUpper.new(config.our_nameserver, config.old_acom_ips, config.all_acom_ips, config.lookup_servers)
-    
+    # Open/create & configure csv files
     domain_file = CSV.open(input_file, :col_sep => config.separator)
-    nombus_domains = CSV.open(options[:output], "wb", :col_sep => config.separator) if options[:output]
-    # Add headers from 1st line to output if there are any
-    headers =  domain_file.readline unless options['no-headers']
-    nombus_domains << headers if options[:output] unless options['no-headers']
+    first_line = domain_file.readline
+    if first_line.length < options[:column].to_i
+      exit_now! "Error: Column #{options[:column]} is out of range. File #{input_file} has #{first_line.length} columns"
+    end
+    domain_file.rewind if options['no-headers']
+    if options[:output]
+      nombus_domains = CSV.open(options[:output], "wb", :col_sep => config.separator)
+      nombus_domains << first_line unless options['no-headers']
+    end
     if options[:fail]
       fails = CSV.open(options[:fail], "wb")
       fails << config.fail_headers
     end
     
+    # Loop through file and check domain names
+    dns = LookerUpper.new(config.our_nameserver, config.old_acom_ips, config.all_acom_ips, config.lookup_servers)
     domain_file.each_with_index do |row, row_num|
       debug "Row #{row_num+1}: #{row}".color(config.debug_color)
       domain = row[config.column_index]
@@ -55,7 +61,7 @@ class App
           # Ignore if we've already set them up with the current IP.
           unless a_record == config.acom_ip
             info "#{domain}: Not managed by us".color(config.success_color)
-            nombus_domains << row  if options[:output]
+            nombus_domains << row if options[:output]
           end
         elsif dns.not_pointed_at_us? a_record
           warn (message = "#{domain}: Not pointed at us").color(config.warn_color)
@@ -89,7 +95,7 @@ class App
     # Methadone sets this to false for some reason if 'no' is at beginning of op so doing it manually
     options['no-headers'] = true
   end
-  on "-o PATH/FILE.CSV", "--output", "Specify a path where you would like records for domains that are not managed by us to be captured."
+  on "-o PATH/FILE.CSV", "--output", "Specify a path where records for domains that are not managed by us to be captured."
   on "-f PATH/FILE.CSV", "--fail", "Specify a path where you would like records for domains that failed dns lookup"
   arg :csv_file, "Path to a CSV file with a list of domain names"
   use_log_level_option
