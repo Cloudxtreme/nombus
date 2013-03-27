@@ -37,8 +37,8 @@ module Nombus
         config.separator.should == '|'
       end
 
-      it 'returns a tab chararacter if the word "tab" is in the input' do
-        config.separator = 'tab'
+      it 'returns a tab escape sequence if \t is the input' do
+        config.separator = '\t'
         config.separator.should == "\t"
       end
     end

@@ -24,7 +24,6 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency('pry-debugger')
   gem.add_dependency('methadone', '~> 1.2.4')
   gem.add_dependency('dnsruby')
-  gem.add_dependency('public_suffix')
   gem.add_dependency('whois')
   gem.add_dependency('rainbow')
 end

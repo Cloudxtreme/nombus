@@ -14,7 +14,8 @@ module Nombus
       @fail_headers = ["domain", "error"]
       @separator = config['separator']
       @lookup_servers = config['lookup_servers']
-      @column = config['column'].to_s # column needs to be a string for setter to work right
+      # column needs to be a string for setter method to work right
+      @column = config['column'].to_s
       @success_color = config['success_color'].to_sym
       @debug_color = config['debug_color'].to_sym
       @warn_color = config['warn_color'].to_sym

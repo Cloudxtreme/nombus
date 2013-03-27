@@ -1,14 +1,8 @@
 To do:
 
-Find an alternative to using PublicSuffix to check for valid domain names. It allows for some strange domain names.
 Add method to Configurator that will report it's state so I can have one debug line that shows all the options.
-
-Backlog features:
-
 Take input from stdin instead of a file.
 Send output to stdout
-Need to handle error if wrong separator specified using -s, e.g. tab when the file has commas. It's hard to detect what the separator should acutally be in any given situation. Better to try to exit with a helpful error if the field generated is not a domain name.
-
 
 Get exit code of a program: `echo $?`
 
@@ -22,8 +16,7 @@ Example: DEBUG=true bundle exec nombus -c 0 --log-level debug tmp/test_domains-s
 dns config example
 dns = DNS.new( {:nameserver=>["8.8.8.8", "8.8.4.4"], :search=>["withwre.com", "mywindermere.com"], :ndots=>1} )
 
-aaronsod.com - has old paws ip
-ns1.windermere.com.
-ns3.windermere.com.
-ns2.windermere.com.
-205.234.73.177
+aaronsod.com - has old paws ip 205.234.73.177
+
+A simple way to print instance variables for a class:
+puts c.instance_variables.map {|e| "#{e}: #{c.instance_variable_get(e)}" }

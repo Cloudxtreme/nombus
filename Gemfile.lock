@@ -4,7 +4,6 @@ PATH
     nombus (0.0.1)
       dnsruby
       methadone (~> 1.2.4)
-      public_suffix
       rainbow
       whois
 
@@ -48,7 +47,6 @@ GEM
     pry-debugger (0.2.2)
       debugger (~> 1.3)
       pry (~> 0.9.10)
-    public_suffix (1.2.1)
     rainbow (1.1.4)
     rake (0.9.6)
     rdoc (4.0.0)

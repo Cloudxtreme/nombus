@@ -37,7 +37,7 @@ module Nombus
       end
     
       it "returns a nameserver" do
-        PublicSuffix.valid?(@nameserver).should be_true
+        @nameserver =~ VALID_DOMAIN
       end
     end
 
