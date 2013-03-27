@@ -5,10 +5,7 @@ require 'methadone'
 require 'nombus'
 require 'csv'
 require 'rainbow'
-require 'public_suffix'
 require 'yaml'
-require 'pry'
-require 'pry-debugger'
 
 
 class App
@@ -19,12 +16,10 @@ class App
   config = Configurator.new( YAML::load( File.open(ConfigFile) ) )
   
   main do |input_file|
-    # Override defaults with command line options
     config.column = options[:column]
     config.separator = options[:separator]
     config.lookup_servers = options[:nameservers]
     
-    # Open/create & configure csv files
     domain_file = CSV.open(input_file, :col_sep => config.separator)
     first_line = domain_file.readline
     if first_line.length < options[:column].to_i
@@ -40,12 +35,11 @@ class App
       fails << config.fail_headers
     end
     
-    # Loop through file and check domain names
     dns = LookerUpper.new(config.our_nameserver, config.old_acom_ips, config.all_acom_ips, config.lookup_servers.split)
     domain_file.each_with_index do |row, row_num|
       debug "Row #{row_num+1}: #{row}".color(config.debug_color)
       domain = row[config.column_index]
-      if not PublicSuffix.valid? domain
+      if not dns.valid_doman? domain
         warn (message = "#{domain}: not a valid domain name").color(config.warn_color)
         fails << [domain, message] if options[:fail]
         next
@@ -83,7 +77,6 @@ class App
     
   end
   
-  # Configure command line options/arguments and build the help menu.
   on("-v", "--version", "Print the version number & quit") do
     info "nombus #{Version}"
     exit

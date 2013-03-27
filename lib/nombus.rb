@@ -1,18 +1,13 @@
 require "nombus/version"
 require "dnsruby"
 require "whois"
-require "pry"
-require "pry-debugger"
 
 
 module Nombus
   FileName = 'nombus.rc.yaml'
-
-  def ConfigFile
-    default = File.join('config', FileName)
-    user = File.join(ENV['HOME'], ".#{FileName}")
-    File.exists?(user) ? user : default
-  end
+  Default = File.join('config', FileName)
+  User = File.join(ENV['HOME'], ".#{FileName}")
+  ConfigFile = File.exists?(User) ? User : Default
   
   class Configurator 
     def initialize(config)
@@ -95,6 +90,10 @@ module Nombus
 
     def not_pointed_at_us?(ip)
       not @all_acom_ips.include? ip
+    end
+    
+    def valid_doman?(domain)
+      domain =~ /^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6}(:[0-9]{1,5})?(\/.*)?$/ix
     end
 
     def lookup_error_message(domain, error)

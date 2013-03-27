@@ -1,7 +1,7 @@
 To do:
 
-Add method to Configurator that will report it's state so I can have one debug line that shows all the options.
 Find an alternative to using PublicSuffix to check for valid domain names. It allows for some strange domain names.
+Add method to Configurator that will report it's state so I can have one debug line that shows all the options.
 
 Backlog features:
 
