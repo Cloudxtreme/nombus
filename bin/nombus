@@ -6,6 +6,7 @@ require 'nombus'
 require 'csv'
 require 'rainbow'
 require 'public_suffix'
+require 'yaml'
 require 'pry'
 require 'pry-debugger'
 
@@ -40,7 +41,7 @@ class App
     end
     
     # Loop through file and check domain names
-    dns = LookerUpper.new(config.our_nameserver, config.old_acom_ips, config.all_acom_ips, config.lookup_servers)
+    dns = LookerUpper.new(config.our_nameserver, config.old_acom_ips, config.all_acom_ips, config.lookup_servers.split)
     domain_file.each_with_index do |row, row_num|
       debug "Row #{row_num+1}: #{row}".color(config.debug_color)
       domain = row[config.column_index]
@@ -63,6 +64,9 @@ class App
             info "#{domain}: Not managed by us".color(config.success_color)
             nombus_domains << row if options[:output]
           end
+        elsif a_record == config.paws_ip
+          warn (message = "#{domain}: Using old PAWS IP address").color(config.warn_color)
+          fails << [domain, message] if options[:fail]
         elsif dns.not_pointed_at_us? a_record
           warn (message = "#{domain}: Not pointed at us").color(config.warn_color)
           fails << [domain, message] if options[:fail]
@@ -86,7 +90,8 @@ class App
   end
   description 'Check a CSV file for domain names that are not managed by Windermere DNS servers.'
   options[:separator] = config.separator
-  on "-s CHARACTER", "--separator", "Column separator for csv file. Use 'tab' to indicate tabs."
+  on "-s CHARACTER", "--separator",
+    %q(Column separator for CSV file. Use '\t' for tabs & single-quotes to escape special characters)
   options[:column] = config.column
   on "-c NUMBER", "--column", "The column where the domain name is stored in the csv file, starting at 1"
   options[:nameservers] = config.lookup_servers
@@ -95,8 +100,8 @@ class App
     # Methadone sets this to false for some reason if 'no' is at beginning of op so doing it manually
     options['no-headers'] = true
   end
-  on "-o PATH/FILE.CSV", "--output", "Specify a path where records for domains that are not managed by us to be captured."
-  on "-f PATH/FILE.CSV", "--fail", "Specify a path where you would like records for domains that failed dns lookup"
+  on "-o PATH/FILE.CSV", "--output", "Specify path for CSV where records for domains that are not managed by us will be stored"
+  on "-f PATH/FILE.CSV", "--fail", "Specify path for CSV where records for domains that failed dns lookup will be stored"
   arg :csv_file, "Path to a CSV file with a list of domain names"
   use_log_level_option
   

@@ -6,13 +6,19 @@ require "pry-debugger"
 
 
 module Nombus
-  ConfigFile = 'nombus.rc.yml'
+  FileName = 'nombus.rc.yaml'
+
+  def ConfigFile
+    default = File.join('config', FileName)
+    user = File.join(ENV['HOME'], ".#{FileName}")
+    File.exists?(user) ? user : default
+  end
   
   class Configurator 
     def initialize(config)
       @fail_headers = ["domain", "error"]
       @separator = config['separator']
-      @lookup_servers = config['lookup_servers'].split
+      @lookup_servers = config['lookup_servers']
       @column = config['column'].to_s # column needs to be a string for setter to work right
       @success_color = config['success_color'].to_sym
       @debug_color = config['debug_color'].to_sym
@@ -33,6 +39,8 @@ module Nombus
     
     def column=(col)
       case col
+      when ""
+        raise "Error: No column provided"
       when /\D/
         raise "Error: #{col} is not a valid number"
       when '0'
@@ -49,9 +57,11 @@ module Nombus
     
     def separator=(sep)
       case sep
+      when ""
+        raise "Error: No separator provided"
       when /\s/
         raise "Error: Separator can't be a literal whitspace character. Use 'tab' for tabs"
-      when 'tab' # Can't use literal tab on command line
+      when '\t' # Can't use literal tab on command line
         @separator = "\t"
       else
         @separator = sep
