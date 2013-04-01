@@ -44,8 +44,12 @@ class App
         fails << [domain, message] if options[:fail]
         next
       end
+      tries = 0
     	begin
     	  records = dns.getresources(domain, 'any')
+    	  # The cnames are always either www versions of existing domains
+    	  # or mywindermere domains that were pointed at the site using the admin tool
+    	  next if records[0].type == 'CNAME'
         nameserver, a_record = dns.get_records(records)
         # if it doesn't have our namserver but does have one of our
         # old ip addresses then we found one that we want to record.
@@ -64,17 +68,29 @@ class App
         elsif dns.not_pointed_at_us? a_record
           warn (message = "#{domain}: Not pointed at us").color(config.warn_color)
           fails << [domain, message] if options[:fail]
-        else
-          info "#{domain}: Managed by us"
         end
-      rescue Dnsruby::NXDomain, Dnsruby::ServFail, Dnsruby::ResolvError => dns_error
-        message = dns.lookup_error_message(domain, dns_error)
-        warn message.color(config.warn_color)
+      rescue Dnsruby::NXDomain, Dnsruby::ServFail => dns_error
+        message = dns.lookup_error_message(domain, dns_error)          
+        warn message.to_s.color(config.warn_color)
+        fails << [domain, message] if options[:fail]
+        next
+      rescue Dnsruby::ResolvTimeout => dns_error
+        tries += 1
+        if tries <= 3
+          error "Timed out looking up #{domain}, retrying".color(config.error_color)
+          sleep 10
+          retry
+        else
+          warn (message = dns.generic_lookup_error(domain, dns_error)).color(config.warn_color)
+          fails << [domain, message] if options[:fail]
+          next
+        end
+      rescue => dns_error
+        warn (message = dns.generic_lookup_error(domain, dns_error)).color(config.warn_color)
         fails << [domain, message] if options[:fail]
         next
       end
-    end
-    
+    end   
   end
   
   on("-v", "--version", "Print the version number & quit") do
@@ -89,7 +105,7 @@ class App
   on "-c NUMBER", "--column", "The column where the domain name is stored in the csv file, starting at 1"
   options[:nameservers] = config.lookup_servers
   on "-n 'SRVR1 SRVR2'", "--nameservers",	"A quoted list of nameservers to use for lookup queries"
-  on("--no-headers","Specify that the csv file has no headers, default assumes headers exist") do
+  on("--no-headers","Specify that the CSV file has no headers, default assumes headers exist") do
     # Methadone sets this to false for some reason if 'no' is at beginning of op so doing it manually
     options['no-headers'] = true
   end

@@ -1,7 +1,8 @@
 require "nombus/version"
 require "dnsruby"
 require "whois"
-
+require "pry"
+require "pry-debugger"
 
 module Nombus
   FileName = 'nombus.rc.yaml'
@@ -78,8 +79,10 @@ module Nombus
     attr_reader :our_server, :old_acom_ips, :all_acom_ips
     
     def get_records(rr)
-      ns = rr.find {|r| r.type == 'SOA'}.mname.to_s
-      a = rr.find {|r| r.type == 'A'}.address.to_s
+      ns = rr.find {|r| r.type == 'SOA'}
+      a = rr.find {|r| r.type == 'A'}
+      ns = ns.mname.to_s unless ns.nil?
+      a = a.address.to_s unless a.nil?
       return ns, a
     end
 
@@ -96,18 +99,20 @@ module Nombus
     def valid_doman?(domain)
       domain =~ /^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,6}(:[0-9]{1,5})?(\/.*)?$/ix
     end
-
+    
+    def generic_lookup_error(domain, error)
+      "Lookup failed for #{domain}: #{error.message}"
+    end
+    
     def lookup_error_message(domain, error)
       # See if domain is even registered 1st
       if Whois.whois(domain.to_s).available?
         return "#{domain}: Not a registered domain name"
       # Try to explain other errors as best as possible
-      elsif error == NXDomain
+      elsif error.class == Dnsruby::NXDomain
         return "No records found for #{domain}"
-      elsif error == ServFail
-        return "Lookup failed for #{domain}"
-      elsif error == ResolvError
-        return "DNS result has no information for #{domain}"
+      elsif error.class == Dnsruby::ServFail
+        self.generic_lookup_error(domain, error)
       end
     end
   end
