@@ -1,23 +1,24 @@
 # Nombus
 
-Nombus is a command line tool wrtieen in Ruby, using the Methadone framework. I wrote some test cases for it in Rspec. The primary goal of nombus was to identify custom domain names for our Agent Website product that were not managed on our DNS servers, and isolate those that were using an old IP address that we wanted to turn down. It was also useful for cleaning up domain names that were entered in our database but were no longer pointed at a valid agent website.
+Nombus is a command line tool written in Ruby, using the Methadone framework. I wrote some test cases for it in Rspec. The primary goal of nombus was to identify custom domain names for our Agent Website product that were not managed on our DNS servers, and isolate those that were using an old IP address that we wanted to turn down. It was also useful for cleaning up domain names that were entered in our database but were no longer pointed at a valid agent website.
 
 ## Installation
 
 You can try the tool without installing it on your path with bundler:
-		$ cd nombus/
-    $ bundle install
-		$ bundle exec nombus test_domans.csv
+
+    $ cd nombus/  
+    $ bundle install  
+    $ bundle exec nombus test_domans.csv
 
 You can install it on your path as a gem using:
 
     $ gem install nombus
 
 ## Usage
-
+<pre>
 Usage: nombus [options] csv_file
 
-Options:
+Options:  
     -h, --help                       Show command line help
     -v, --version                    Print the version number & quit
     -s, --separator CHARACTER        Column separator for CSV file. Use '\t' for tabs & single-quotes to escape special characters
@@ -32,4 +33,4 @@ Options:
         --log-level LEVEL            Set the logging level
                                      (debug|info|warn|error|fatal)
                                      (Default: info)
-
+</pre>
